@@ -39,7 +39,7 @@ class PartialTransposeScanner2D(Scanner2D):
         super().__init__(filter_size=filter_size)
         condition = torch.tensor(np.indices([filter_size, filter_size]).sum(axis=0) % 2 == 1)
         self.order = torch.arange(filter_size**2).reshape([filter_size, filter_size])
-        self.order = torch.where(condition, self.order.transpose(0,1), self.order)
+        self.order = torch.where(condition, self.order.transpose(0,1), self.order).flatten()
 
     def scan(self, flattened):
         return flattened[:,self.order]

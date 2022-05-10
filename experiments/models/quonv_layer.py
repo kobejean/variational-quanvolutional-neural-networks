@@ -68,6 +68,7 @@ class QuonvLayer(nn.Module):
         conv = img.unfold(2, self.filter_size, self.stride)
         conv = conv.unfold(1, self.filter_size, self.stride)
         conv = conv.transpose(2,3).reshape(-1, self.filter_size**2)
+        return conv
 
     def calc_out_dim(self, img):
         bs, h, w, ch = img.size()
