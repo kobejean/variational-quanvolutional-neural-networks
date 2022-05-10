@@ -65,17 +65,9 @@ class QuonvLayer(nn.Module):
             self.torch_qlayer = self.qlayer
 
     def convolve(self, img):
-        bs, h, w, ch = img.size()
-        #img.requires_grad = False
-        """if ch > 1:
-            img = img.mean(axis=-1).reshape(bs, h, w, 1)"""
-        for b in range(bs):
-            for j in range(0, h - self.filter_size + 1, self.stride):
-                for k in range(0, w - self.filter_size + 1, self.stride):
-                    # Process a squared nxn region of the image with a quantum circuit
-                    patch2d = img[b, j: j + self.filter_size, k: k + self.filter_size, :]
-                    flattened = self.scanner.scan(patch2d)
-                    yield flattened, b, j, k
+        conv = img.unfold(2, self.filter_size, self.stride)
+        conv = conv.unfold(1, self.filter_size, self.stride)
+        conv = conv.transpose(2,3).reshape(-1, self.filter_size**2)
 
     def calc_out_dim(self, img):
         bs, h, w, ch = img.size()
@@ -84,20 +76,11 @@ class QuonvLayer(nn.Module):
         return bs, h_out, w_out, self.out_channels
 
     def forward(self, img):
-
-        out = torch.empty(self.calc_out_dim(img), dtype=self.dtype)
-
-        # print("debug", self.filter_size, self.stride, h,w,ch,h_out, out.shape)
-        # Loop over the coordinates of the top-left pixel of 2X2 squares
-        for qnode_inputs, b, j, k in self.convolve(img):
-            #print(qnode_inputs)
-            q_results = self.torch_qlayer(
-                qnode_inputs
-            )
-
-            # Assign expectation values to different channels of the output pixel (j/2, k/2)
-            out[b, j // self.stride, k // self.stride] = q_results
-
+        bs, oh, ow, och = self.calc_out_dim(img)
+        out = self.convolve(img)     # b*oh*ow,filter_size**2
+        out = self.scanner.scan(out) # b*oh*ow,filter_size**2
+        out = self.torch_qlayer(out) # b*oh*ow,och
+        out = out.reshape(bs, oh, ow, och)
         return out
 
     def get_out_template(self, img):
