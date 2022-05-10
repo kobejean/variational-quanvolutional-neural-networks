@@ -13,7 +13,7 @@ class QNNModel(nn.Module):
     """Quantum Trainable Model"""
 
     def __init__(self, weights, out_channels, circuit, out_features, n_rotations=4, wires=4,
-                 seed=None, stride=2, filter_size=2, img_size=28, device="default.qubit"):
+                 seed=None, stride=2, filter_size=2, img_size=28, scanner_type='raster', device="default.qubit"):
         super().__init__()
 
         self.qlayer_1 = QuonvLayer(stride=stride,
@@ -23,6 +23,7 @@ class QNNModel(nn.Module):
                                    out_channels=out_channels,
                                    seed=seed,
                                    filter_size=filter_size,
+                                   scanner_type=scanner_type,
                                    device=device)
 
         self.flatten = nn.Flatten()
@@ -62,6 +63,7 @@ def initialize_QNN_model(params, device, encoding=True):
         wires=get_wires_number(params),
         seed=params["weights_seed"],
         filter_size=filter_size,
+        scanner_type=params['scanner_type'],
         stride=stride,
         img_size=img_size,
         device=device

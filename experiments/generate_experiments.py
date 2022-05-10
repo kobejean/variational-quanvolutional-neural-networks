@@ -79,7 +79,8 @@ FRQI_4x4_params = {
 }
 
 
-trainables = [True, False]
+trainables = [True]
+scanner_types = ['raster', 'random', 'ptrans', 'zigzag']
 
 encoders = {
     "2x2": [
@@ -106,21 +107,23 @@ for seed in seeds:
 
         for encoder in encoders[key]:
             for trainable in trainables:
+                for scanner_type in scanner_types:
 
-                params = hyper_params.copy()
-                params.update(encoder)
-                params["trainable"] = trainable
-                params["calculation_seed"] = seed
+                    params = hyper_params.copy()
+                    params.update(encoder)
+                    params["scanner_type"] = scanner_type
+                    params["trainable"] = trainable
+                    params["calculation_seed"] = seed
 
-                params["calculation_args"] = {}
-                params["encoder_args"] = {}
-                params["measurement_args"] = {}
+                    params["calculation_args"] = {}
+                    params["encoder_args"] = {}
+                    params["measurement_args"] = {}
 
-                name = "Seed_{}_Trainable_{}_{}_{}_imgsize_{}".format(seed, "yes" if trainable else "no", encoder["encoder"], key, params["img_size"])
+                    name = "Seed_{}_Trainable_{}_{}_{}_imgsize_{}_scanner_{}".format(seed, "yes" if trainable else "no", encoder["encoder"], key, params["img_size"], params["scanner_type"])
 
-                experiments[name] = params
+                    experiments[name] = params
 
-                print(name)
+                    print(name)
 
         with open("experiments_seed_{}_filtersize_{}_imgsize_{}.yaml".format(seed, key, params["img_size"]), "w") as f:
             result = yaml.dump(experiments, f)
