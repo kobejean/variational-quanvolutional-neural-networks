@@ -1,4 +1,6 @@
 import logging
+from unittest import case
+from .scanner import PartialTransposeScanner2D, RandomScanner2D, RasterScanner2D, ZigZagScanner2D
 
 from qiskit import IBMQ
 
@@ -15,12 +17,10 @@ import pennylane as qml
 
 class QuonvLayer(nn.Module):
     def __init__(self, weights, stride=1, device="default.qubit", wires=4,
-                 number_of_filters=1, circuit=None, filter_size=2, out_channels=4, seed=None, dtype=torch.float32):
+                 number_of_filters=1, circuit=None, filter_size=2, out_channels=4, scanner_type = 'raster', seed=None, dtype=torch.float32):
 
         super(QuonvLayer, self).__init__()
         self.logger = logging.getLogger(__name__)
-        if seed is not None:
-            torch.manual_seed(seed)
         self.stride = stride
         self.wires = wires
 
@@ -45,6 +45,17 @@ class QuonvLayer(nn.Module):
         self.out_channels = out_channels
         self.dtype = dtype
 
+
+        self.scanner_type = scanner_type
+        scanner_gen = {
+            'raster': lambda: RasterScanner2D(filter_size=filter_size),
+            'random': lambda: RandomScanner2D(filter_size=filter_size),
+            'ptrans': lambda: PartialTransposeScanner2D(filter_size=filter_size),
+            'zigzag': lambda: ZigZagScanner2D(filter_size=filter_size)
+        }
+        self.scanner = scanner_gen.get(scanner_type)()
+        self.scanner.print()
+
         self.qlayer = qml.QNode(circuit, self.device, interface="torch", init_method=torch.nn.init.uniform_)
         if weights is not None:
             self.torch_qlayer = qml.qnn.TorchLayer(self.qlayer, weight_shapes={"weights": weights.shape},
@@ -62,7 +73,9 @@ class QuonvLayer(nn.Module):
             for j in range(0, h - self.filter_size + 1, self.stride):
                 for k in range(0, w - self.filter_size + 1, self.stride):
                     # Process a squared nxn region of the image with a quantum circuit
-                    yield img[b, j: j + self.filter_size, k: k + self.filter_size, :].flatten(), b, j, k
+                    patch2d = img[b, j: j + self.filter_size, k: k + self.filter_size, :]
+                    flattened = self.scanner.scan(patch2d)
+                    yield flattened, b, j, k
 
     def calc_out_dim(self, img):
         bs, h, w, ch = img.size()
@@ -97,8 +110,8 @@ class QuonvLayer(nn.Module):
 class ExtractStatesQuonvLayer(QuonvLayer):
 
     def __init__(self, weights, stride=1, device="default.qubit", wires=4,
-                 number_of_filters=1, circuit=None, filter_size=2, out_channels=4, seed=None, dtype=torch.complex64):
-        super().__init__(weights, stride, device, wires, number_of_filters, circuit, filter_size, out_channels, seed, dtype)
+                 number_of_filters=1, circuit=None, filter_size=2, out_channels=4, scanner_type = 'raster', seed=None, dtype=torch.complex64):
+        super().__init__(weights, stride, device, wires, number_of_filters, circuit, filter_size, out_channels, scanner_type, seed, dtype)
 
     def calc_out_dim(self, img):
         bs, h, w, ch = img.size()
@@ -124,4 +137,3 @@ class ExtractStatesQuonvLayer(QuonvLayer):
 
             # Assign expectation values to different channels of the output pixel (j/2, k/2)
             out[b, j // self.stride, k // self.stride] = q_results"""
-

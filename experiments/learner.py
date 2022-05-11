@@ -11,7 +11,6 @@ from utils.calculation_utils import calculate_mean_of_metric, calculate_executio
 from utils.params_utils import save_params
 from utils.random_util import set_seed
 
-
 class Learner:
 
     def __init__(self, data, hyperparams, seeds, criterion, optimizer, results_dir, logger, writer=None,
@@ -70,7 +69,7 @@ class Learner:
                 if step == 0:
                     # weights = model.qlayer_1.torch_qlayer.weights
                     self.logger.debug(f"Quantum circuit at the beginning of epoch {epoch}")
-                    model.draw_qlayer_circuit()
+                    #model.draw_qlayer_circuit()
 
                 # error, gradients and optimization
                 loss = self.criterion(y_pred, y)
@@ -81,10 +80,10 @@ class Learner:
                 accuracy.append(acc)
                 losses.append(loss.item())
 
-                if (step > 0) and (step % 5 == 0):
-                    if trainable:
-                        self.logger.debug("Training step %d. Output current quantum circuit weights.", step)
-                        self.logger.debug(model.qlayer_1.torch_qlayer.weights)
+                #if (step > 0) and (step % 5 == 0):
+                    #if trainable:
+                        #self.logger.debug("Training step %d. Output current quantum circuit weights.", step)
+                        #self.logger.debug(model.qlayer_1.torch_qlayer.weights)
 
                 # early break
                 if step > 0 and step % (self.steps_in_epoch - 1) == 0:
