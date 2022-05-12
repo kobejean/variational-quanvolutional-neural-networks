@@ -86,13 +86,13 @@ encoders = {
     "2x2": [
         TRESHOLD_2x2_params,
         NEQR_2x2_params,
-        FRQI_2x2_params,
+        # FRQI_2x2_params,
     ],
 
     "4x4": [
         TRESHOLD_4x4_params,
         NEQR_4x4_params,
-        FRQI_4x4_params,
+        # FRQI_4x4_params,
     ]
 }
 
